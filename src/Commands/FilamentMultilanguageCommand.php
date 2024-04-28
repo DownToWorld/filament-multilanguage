@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace DTW\FilamentMultilanguage\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class FilamentMultilanguageCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'filament-multilanguage';
 
     public $description = 'My command';
 

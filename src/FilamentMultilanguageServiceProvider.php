@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton;
+namespace DTW\FilamentMultilanguage;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use VendorName\Skeleton\Commands\SkeletonCommand;
+use DTW\FilamentMultilanguage\Commands\FilamentMultilanguageCommand;
 
-class SkeletonServiceProvider extends PackageServiceProvider
+class FilamentMultilanguageServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
@@ -16,10 +16,10 @@ class SkeletonServiceProvider extends PackageServiceProvider
          * More info: https://github.com/spatie/laravel-package-tools
          */
         $package
-            ->name('skeleton')
+            ->name('filament-multilanguage')
             ->hasConfigFile()
             ->hasViews()
-            ->hasMigration('create_skeleton_table')
-            ->hasCommand(SkeletonCommand::class);
+            ->hasMigration('create_filament-multilanguage_table')
+            ->hasCommand(FilamentMultilanguageCommand::class);
     }
 }
