@@ -20,7 +20,7 @@ composer require "downtoworld/filament-multilanguage:dev-main"
 You can add the plugin to your panel (normally AdminPanelProvider):
 
 ```bash
-use use DTW\FilamentMultilanguage\FilamentMultilanguagePlugin;
+use DTW\FilamentMultilanguage\FilamentMultilanguagePlugin;
 
 $panel
     ...
