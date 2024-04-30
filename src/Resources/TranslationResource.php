@@ -17,10 +17,6 @@ class TranslationResource extends Resource
 {
     protected static ?string $model = Translation::class;
 
-    protected static ?string $navigationGroup = 'System';
-    protected static ?string $navigationLabel = 'Translations Manager';
-    protected static ?string $navigationIcon = 'heroicon-o-globe-asia-australia';
-
     public static function table(Table $table): Table
     {
         return $table
