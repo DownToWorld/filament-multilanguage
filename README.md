@@ -14,7 +14,7 @@ Then it also lets you translate them directly from the UI while using a cache dr
 You can install the package via composer:
 
 ```bash
-composer require "downtoworld/filament-multilanguage:dev-master"
+composer require "downtoworld/filament-multilanguage:dev-main"
 ```
 
 You can publish and run the migrations with:
