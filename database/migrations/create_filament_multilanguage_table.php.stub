@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('filament_multilanguage_table', function (Blueprint $table) {
+            $table->id();
+
+            $table->string('translate_panel_id')->index();
+            $table->string('translate_object');
+            $table->string('translate_key');
+            $table->string('translate_language');
+            $table->text('translate_default')->nullable();
+            $table->text('translate_value')->nullable();
+
+            $table->unique(['translate_object', 'translate_key', 'translate_language'], 'filament_multilanguage_unicity');
+
+            $table->timestamps();
+        });
+    }
+};
