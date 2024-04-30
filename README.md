@@ -32,6 +32,7 @@ This is the contents of the published config file:
 
 ```php
 return [
+    'languages' => ['en', 'es', 'fr'], // CONFIGURE YOUR AVAILABLE LOCALES HERE
     'authorized_emails' => [
         //user@user.com INSERT YOUR EMAILS HERE
     ]
