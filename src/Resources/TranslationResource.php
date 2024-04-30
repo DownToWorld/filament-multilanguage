@@ -29,6 +29,7 @@ class TranslationResource extends Resource
                 TextColumn::make('translate_object'),
                 TextColumn::make('translate_key'),
                 TextInputColumn::make('translate_value')->grow()
+                    ->extraInputAttributes(['size' => 500])
                     ->placeholder(fn ($record) => $record->translate_default),
             ])
             ->filters([

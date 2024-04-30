@@ -11,11 +11,15 @@ class TranslationPolicy
      */
     public function before($user, string $ability): bool|null
     {
-        if (in_array($user->email, config('filament-multilanguage.authorized_emails'))) {
-            return true;
+        if (config('app.env') === 'production') {
+            if (in_array($user->email, config('filament-multilanguage.authorized_emails'))) {
+                return true;
+            }
+
+            return false;
         }
 
-        return null;
+        return true;
     }
 
     /**
