@@ -16,6 +16,7 @@ use Filament\Tables\Filters\TernaryFilter;
 class TranslationResource extends Resource
 {
     protected static ?string $model = Translation::class;
+    protected static ?string $navigationIcon = 'heroicon-o-globe-asia-australia';
 
     public static function table(Table $table): Table
     {

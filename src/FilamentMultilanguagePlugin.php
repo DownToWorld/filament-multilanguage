@@ -4,7 +4,7 @@ namespace DTW\FilamentMultilanguage;
 
 use DTW\FilamentMultilanguage\Models\Translation;
 use DTW\FilamentMultilanguage\Resources\TranslationResource;
-use Filament\Actions\StaticAction;
+use Filament\Actions\Action;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Tables\Columns\TextColumn;
@@ -12,11 +12,30 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
 use Illuminate\Contracts\Support\Htmlable;
-use Closure;
 use Filament\Actions\ActionGroup as BaseActionGroup;
-use Filament\Forms\Components\Field;
-use Filament\Navigation\NavigationItem;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\Actions\Action as FormsAction;
+use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Cache;
+use Filament\Tables\Columns\CheckboxColumn;
+use Filament\Tables\Columns\ColorColumn;
+use Filament\Tables\Columns\ColumnGroup;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\SelectColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Model;
+use Filament\Tables\Columns\TextInputColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Columns\ViewColumn;
+use Filament\Notifications\Actions\Action as NotificationsAction;
+use Filament\Resources\Pages\Page;
+use Filament\Resources\Resource;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Widgets\Widget;
+use Livewire\ComponentHook;
+use function Livewire\{invade, on, off, once};
+use Filament\Navigation\NavigationItem;
 
 class FilamentMultilanguagePlugin implements Plugin
 {
@@ -37,12 +56,13 @@ class FilamentMultilanguagePlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        $this->translateMakeableNavigationItems();
+        $this->translateDiscoverableFilamentComponents();
         $this->translateMakeableTables();
         $this->translateMakeableColumns();
         $this->translateMakeableFields();
         $this->translateMakeableActions();
         $this->translateMakeableActionGroups();
+        $this->translateMakeableFilters();
     }
 
     public static function getTranslation(String $namespace, String $translatable, ?String $default = null): ?String
@@ -96,7 +116,32 @@ class FilamentMultilanguagePlugin implements Plugin
         Cache::forget(static::$translationsCacheKey);
     }
 
-    public function translateMakeableNavigationItems(): void
+    protected function translateDiscoverableFilamentComponents(): void
+    {
+        $componentHook = new class extends ComponentHook
+        {
+            static function provide()
+            {
+                $renderHook = function (...$params) {
+                    [$component, $view, $params] = $params;
+
+                    if ($component instanceof Page) {
+                        $page = invade($component);
+                    }
+
+                    if ($component instanceof Widget) {
+                        $widget = invade($component);
+                    }
+                };
+
+                on('render', $renderHook);
+            }
+        };
+
+        app('livewire')->componentHook($componentHook);
+    }
+
+    protected function translateMakeableNavigationItems(): void
     {
         App::bind(NavigationItem::class, function ($app, $params) {
             return new class($params['label']) extends NavigationItem
@@ -121,19 +166,311 @@ class FilamentMultilanguagePlugin implements Plugin
         App::bind(Table::class, function ($app, $params) {
             return new class($params['livewire']) extends Table
             {
-                //
+                public function getModelLabel(): string
+                {
+                    $default = parent::getModelLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class . '_table',
+                        'model_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getPluralModelLabel(): string
+                {
+                    $default = parent::getPluralModelLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class . '_table',
+                        'model_label_plural',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getRecordTitle(Model $record): string
+                {
+                    $default = parent::getRecordTitle($record);
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class . '_table',
+                        'record_title',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getHeading(): string | Htmlable | null
+                {
+                    $default = parent::getHeading();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class . '_table',
+                        'heading',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getDescription(): string | Htmlable | null
+                {
+                    $default = parent::getDescription();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class . '_table',
+                        'description',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getEmptyStateDescription(): string | Htmlable | null
+                {
+                    $default = parent::getEmptyStateDescription();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class . '_table',
+                        'empty_state_description',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getEmptyStateHeading(): string | Htmlable
+                {
+                    $default = parent::getEmptyStateHeading();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class . '_table',
+                        'empty_state_heading',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
             };
         });
     }
 
     protected function translateMakeableColumns(): void
     {
+        /*
+            CheckboxColumn
+            ColorColumn
+            ColumnGroup
+            IconColumn
+            ImageColumn
+            SelectColumn
+            TextColumn
+            TextInputColumn
+            ToggleColumn
+            ViewColumn
+        */
+
+        App::bind(ViewColumn::class, function ($app, $params) {
+            return new class($params['name']) extends ViewColumn
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
+        App::bind(ToggleColumn::class, function ($app, $params) {
+            return new class($params['name']) extends ToggleColumn
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
+        App::bind(TextInputColumn::class, function ($app, $params) {
+            return new class($params['name']) extends TextInputColumn
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
+        App::bind(SelectColumn::class, function ($app, $params) {
+            return new class($params['name']) extends SelectColumn
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getOptions(): array
+                {
+                    $options = parent::getOptions();
+
+                    return collect($options)->map(function ($default, $defaultKey) {
+                        $translation = FilamentMultilanguagePlugin::getTranslation(
+                            $this->getLivewire()::class,
+                            'column_' . $this->name . '_option_' . $defaultKey,
+                            $default
+                        );
+
+                        return $translation ?? $default;
+                    })->toArray();
+                }
+            };
+        });
+
+        App::bind(ImageColumn::class, function ($app, $params) {
+            return new class($params['name']) extends ImageColumn
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
+        App::bind(IconColumn::class, function ($app, $params) {
+            return new class($params['name']) extends IconColumn
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
+        App::bind(ColumnGroup::class, function ($app, $params) {
+            return new class($params['label'], $params['columns']) extends ColumnGroup
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_group_' . $this->label . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
+        App::bind(CheckboxColumn::class, function ($app, $params) {
+            return new class($params['name']) extends CheckboxColumn
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
+        App::bind(ColorColumn::class, function ($app, $params) {
+            return new class($params['name']) extends ColorColumn
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
         App::bind(TextColumn::class, function ($app, $params) {
             return new class($params['name']) extends TextColumn
             {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'column_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
                 public function getDescriptionAbove(): string | Htmlable | null
                 {
-                    $default = $this->evaluate($this->descriptionAbove);
+                    $default = parent::getDescriptionAbove();
 
                     $translation = FilamentMultilanguagePlugin::getTranslation(
                         $this->getLivewire()::class,
@@ -146,7 +483,7 @@ class FilamentMultilanguagePlugin implements Plugin
 
                 public function getDescriptionBelow(): string | Htmlable | null
                 {
-                    $default = $this->evaluate($this->descriptionBelow);
+                    $default = parent::getDescriptionBelow();
 
                     $translation = FilamentMultilanguagePlugin::getTranslation(
                         $this->getLivewire()::class,
@@ -156,47 +493,151 @@ class FilamentMultilanguagePlugin implements Plugin
 
                     return $translation ?? $default;
                 }
-
-                public function getLabel(): string | Htmlable
-                {
-                    $default = $this->evaluate($this->label) ??
-                        (string) str($this->getName())
-                            ->beforeLast('.')
-                            ->afterLast('.')
-                            ->kebab()
-                            ->replace(['-', '_'], ' ')
-                            ->ucfirst();
-
-                    $translation = FilamentMultilanguagePlugin::getTranslation(
-                        $this->getLivewire()::class,
-                        'column_' . $this->name . '_label',
-                        $default
-                    );
-
-                    return $translation ?? $this->shouldTranslateLabel ? __($default) : $default;
-                }
             };
         });
-
-        // [...] REPEAT WITH REST OF TRANSLATABLE COLUMNS
     }
 
     protected function translateMakeableFields(): void
     {
-        App::bind(Field::class, function ($app, $params) {
-            return new class($params['name']) extends Field
+        App::bind(TextInput::class, function ($app, $params) {
+            return new class($params['name']) extends TextInput
             {
-                //
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'input_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getHint(): string | Htmlable | null
+                {
+                    $default = parent::getHint();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'input_' . $this->name . '_hint',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getHelperText(): string | Htmlable | null
+                {
+                    $default = parent::getHelperText();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'input_' . $this->name . '_helper_text',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
             };
         });
+
+        // [...] Add rest of input classes
     }
 
     protected function translateMakeableActions(): void
     {
-        App::bind(StaticAction::class, function ($app, $params) {
-            return new class($params['name'] ?? null) extends StaticAction
+        App::bind(Action::class, function ($app, $params) {
+            return new class($params['name'] ?? null) extends Action
             {
-                //
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'action_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getTooltip(): ?string
+                {
+                    $default = parent::getTooltip();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'action_' . $this->name . '_tooltip',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
+        App::bind(FormsAction::class, function ($app, $params) {
+            return new class($params['name'] ?? null) extends FormsAction
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'action_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getTooltip(): ?string
+                {
+                    $default = parent::getTooltip();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'action_' . $this->name . '_tooltip',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+
+        App::bind(NotificationsAction::class, function ($app, $params) {
+            return new class($params['name'] ?? null) extends NotificationsAction
+            {
+                public function getLabel(): string | Htmlable
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'action_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getTooltip(): ?string
+                {
+                    $default = parent::getTooltip();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'action_' . $this->name . '_tooltip',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
             };
         });
     }
@@ -206,7 +647,111 @@ class FilamentMultilanguagePlugin implements Plugin
         App::bind(BaseActionGroup::class, function ($app, $params) {
             return new class($params['actions']) extends BaseActionGroup
             {
-                //
+                public function getLabel(): string
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'group_action_' . $this->label . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getTooltip(): ?string
+                {
+                    $default = parent::getTooltip();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'group_action_' . $this->label . '_tooltip',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+            };
+        });
+    }
+
+    protected function translateMakeableFilters(): void
+    {
+        App::bind(SelectFilter::class, function ($app, $params) {
+            return new class($params['name'] ?? null) extends SelectFilter
+            {
+                public function getLabel(): string
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'filter_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getOptions(): array
+                {
+                    $options = parent::getOptions();
+
+                    return collect($options)->map(function ($default, $defaultKey) {
+                        $translation = FilamentMultilanguagePlugin::getTranslation(
+                            $this->getLivewire()::class,
+                            'filter_' . $this->name . '_option_' . $defaultKey,
+                            $default
+                        );
+
+                        return $translation ?? $default;
+                    })->toArray();
+                }
+            };
+        });
+
+        App::bind(TernaryFilter::class, function ($app, $params) {
+            return new class($params['name'] ?? null) extends TernaryFilter
+            {
+                public function getLabel(): string
+                {
+                    $default = parent::getLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'filter_' . $this->name . '_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getTrueLabel(): ?string
+                {
+                    $default = parent::getTrueLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'filter_' . $this->name . '_true_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
+
+                public function getFalseLabel(): ?string
+                {
+                    $default = parent::getFalseLabel();
+
+                    $translation = FilamentMultilanguagePlugin::getTranslation(
+                        $this->getLivewire()::class,
+                        'filter_' . $this->name . '_false_label',
+                        $default
+                    );
+
+                    return $translation ?? $default;
+                }
             };
         });
     }
