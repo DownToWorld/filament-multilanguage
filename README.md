@@ -17,6 +17,17 @@ You can install the package via composer:
 composer require "downtoworld/filament-multilanguage:dev-main"
 ```
 
+You can add the plugin to your panel (normally AdminPanelProvider):
+
+```bash
+use DTW\FilamentMultilanguage\FilamentMultilanguagePlugin;
+
+$panel
+    ...
+    ->plugin(new FilamentMultilanguagePlugin)
+    ...
+```
+
 You can publish and run the migrations with:
 
 ```bash
