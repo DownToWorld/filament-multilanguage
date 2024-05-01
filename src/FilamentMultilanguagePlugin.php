@@ -57,6 +57,7 @@ class FilamentMultilanguagePlugin implements Plugin
     public function boot(Panel $panel): void
     {
         $this->translateDiscoverableFilamentComponents();
+        $this->translateMakeableNavigationItems();
         $this->translateMakeableTables();
         $this->translateMakeableColumns();
         $this->translateMakeableFields();
