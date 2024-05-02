@@ -32,6 +32,7 @@ class FilamentMultilanguageServiceProvider extends PackageServiceProvider
         $package
             ->name('filament-multilanguage')
             ->hasConfigFile()
-            ->hasMigration('create_filament_multilanguage_table');
+            ->hasMigration('create_filament_multilanguage_table')
+            ->hasTranslations();
     }
 }

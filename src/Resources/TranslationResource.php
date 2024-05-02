@@ -4,6 +4,7 @@ namespace DTW\FilamentMultilanguage\Resources;
 
 use DTW\FilamentMultilanguage\Models\Translation;
 use DTW\FilamentMultilanguage\Pages\ListTranslations;
+use DTW\FilamentMultilanguage\Traits\TranslatableFilamentResource;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
@@ -15,6 +16,8 @@ use Filament\Tables\Filters\TernaryFilter;
 
 class TranslationResource extends Resource
 {
+    use TranslatableFilamentResource;
+
     protected static ?string $model = Translation::class;
     protected static ?string $navigationIcon = 'heroicon-o-globe-asia-australia';
 

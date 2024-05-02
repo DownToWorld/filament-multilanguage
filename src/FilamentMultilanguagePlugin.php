@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
 use Illuminate\Contracts\Support\Htmlable;
 use Filament\Actions\ActionGroup as BaseActionGroup;
-use Filament\Facades\Filament;
 use Filament\Forms\Components\Actions\Action as FormsAction;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Cache;
@@ -29,13 +28,11 @@ use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Columns\ViewColumn;
 use Filament\Notifications\Actions\Action as NotificationsAction;
-use Filament\Resources\Pages\Page;
-use Filament\Resources\Resource;
 use Filament\Tables\Filters\TernaryFilter;
-use Filament\Widgets\Widget;
-use Livewire\ComponentHook;
-use function Livewire\{invade, on, off, once};
 use Filament\Navigation\NavigationItem;
+use Filament\Pages\BasePage;
+use Filament\Resources\Resource;
+use Filament\Widgets\Widget;
 
 class FilamentMultilanguagePlugin implements Plugin
 {
@@ -56,7 +53,6 @@ class FilamentMultilanguagePlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        $this->translateDiscoverableFilamentComponents();
         $this->translateMakeableNavigationItems();
         $this->translateMakeableTables();
         $this->translateMakeableColumns();
@@ -102,7 +98,7 @@ class FilamentMultilanguagePlugin implements Plugin
             fn (String $language) =>
             [$language => Translation::updateOrCreate([
                 'translate_panel_id' => $panel->getId(),
-                'translate_object' => Str::afterLast($namespace, '\\'),
+                'translate_object' => $namespace,
                 'translate_key' => $translatable,
                 'translate_language' => $language,
             ], ['translate_default' => $default])->translate_value]
@@ -117,29 +113,41 @@ class FilamentMultilanguagePlugin implements Plugin
         Cache::forget(static::$translationsCacheKey);
     }
 
-    protected function translateDiscoverableFilamentComponents(): void
+    public static function getNonTranslatedComponentsList(): array
     {
-        $componentHook = new class extends ComponentHook
-        {
-            static function provide()
-            {
-                $renderHook = function (...$params) {
-                    [$component, $view, $params] = $params;
+        $panel = invade(filament()->getCurrentPanel());
 
-                    if ($component instanceof Page) {
-                        $page = invade($component);
-                    }
+        return collect($panel->livewireComponents)
+            ->filter(function (String $componentClass) {
+                if (is_subclass_of($componentClass, Resource::class)) {
+                    return !in_array(
+                        'DTW\FilamentMultilanguage\Traits\TranslatableFilamentResource',
+                        class_uses_recursive($componentClass)
+                    );
+                }
 
-                    if ($component instanceof Widget) {
-                        $widget = invade($component);
-                    }
-                };
+                if (is_subclass_of($componentClass, Widget::class)) {
+                    return !in_array(
+                        'DTW\FilamentMultilanguage\Traits\TranslatableFilamentWidget',
+                        class_uses_recursive($componentClass)
+                    );
+                }
 
-                on('render', $renderHook);
-            }
-        };
+                if (is_subclass_of($componentClass, BasePage::class)) {
+                    return !in_array(
+                        'DTW\FilamentMultilanguage\Traits\TranslatableFilamentPage',
+                        class_uses_recursive($componentClass)
+                    );
+                }
 
-        app('livewire')->componentHook($componentHook);
+                return false;
+            })
+            ->reject(function ($componentClass) {
+                return Str::startsWith($componentClass, [
+                    'Filament', 'DTW', 'Livewire'
+                ]);
+            })
+            ->toArray();
     }
 
     protected function translateMakeableNavigationItems(): void
