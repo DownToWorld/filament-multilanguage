@@ -6,14 +6,10 @@ use DTW\FilamentMultilanguage\Resources\TranslationResource;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Support\Htmlable;
 use DTW\FilamentMultilanguage\FilamentMultilanguagePlugin;
-use DTW\FilamentMultilanguage\Traits\Translatable;
-use DTW\FilamentMultilanguage\Traits\TranslatableFilamentPage;
 use Illuminate\Support\HtmlString;
 
 class ListTranslations extends ListRecords
 {
-    use TranslatableFilamentPage;
-
     protected static string $resource = TranslationResource::class;
 
     protected function getHeaderActions(): array

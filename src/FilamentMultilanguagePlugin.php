@@ -53,7 +53,6 @@ class FilamentMultilanguagePlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        $this->translateMakeableNavigationItems();
         $this->translateMakeableTables();
         $this->translateMakeableColumns();
         $this->translateMakeableFields();
@@ -65,6 +64,10 @@ class FilamentMultilanguagePlugin implements Plugin
     public static function getTranslation(String $namespace, String $translatable, ?String $default = null): ?String
     {
         $panel = filament()->getCurrentPanel();
+
+        if (Str::startsWith($namespace, config('filament-multilanguage.ignoreBaseNamespaces'))) {
+            return null;
+        }
 
         if (!isset(static::$cachedTranslations[$panel->getId()]) || empty(static::$cachedTranslations[$panel->getId()])) {
             $cachedTranslations = Cache::get(static::$translationsCacheKey . '_' . $panel->getId());
@@ -94,17 +97,12 @@ class FilamentMultilanguagePlugin implements Plugin
             return static::$cachedTranslations[$panel->getId()][App::currentLocale()][$namespace][$translatable];
         }
 
-        $newTranslations = collect(config('filament-multilanguage.languages'))->mapWithKeys(
-            fn (String $language) =>
-            [$language => Translation::updateOrCreate([
-                'translate_panel_id' => $panel->getId(),
-                'translate_object' => $namespace,
-                'translate_key' => $translatable,
-                'translate_language' => $language,
-            ], ['translate_default' => $default])->translate_value]
-        )->toArray();
-
-        return $newTranslations[App::currentLocale()];
+        return Translation::updateOrCreate([
+            'translate_panel_id' => $panel->getId(),
+            'translate_object' => $namespace,
+            'translate_key' => $translatable,
+            'translate_language' => App::currentLocale(),
+        ], ['translate_default' => $default])->translate_value;
     }
 
     public static function flushCachedTranslations(): void
@@ -118,6 +116,9 @@ class FilamentMultilanguagePlugin implements Plugin
         $panel = invade(filament()->getCurrentPanel());
 
         return collect($panel->livewireComponents)
+            ->reject(function ($componentClass) {
+                return Str::startsWith($componentClass, config('filament-multilanguage.ignoreBaseNamespaces'));
+            })
             ->filter(function (String $componentClass) {
                 if (is_subclass_of($componentClass, Resource::class)) {
                     return !in_array(
@@ -142,32 +143,7 @@ class FilamentMultilanguagePlugin implements Plugin
 
                 return false;
             })
-            ->reject(function ($componentClass) {
-                return Str::startsWith($componentClass, [
-                    'Filament', 'DTW', 'Livewire'
-                ]);
-            })
             ->toArray();
-    }
-
-    protected function translateMakeableNavigationItems(): void
-    {
-        App::bind(NavigationItem::class, function ($app, $params) {
-            return new class($params['label']) extends NavigationItem
-            {
-                public function getLabel(): string
-                {
-                    $default = $this->evaluate($this->label);
-                    $translation = FilamentMultilanguagePlugin::getTranslation(
-                        'NavigationItem',
-                        Str::snake($this->label) . '_label',
-                        $default
-                    );
-
-                    return $translation ?? $default;
-                }
-            };
-        });
     }
 
     protected function translateMakeableTables(): void
@@ -175,45 +151,6 @@ class FilamentMultilanguagePlugin implements Plugin
         App::bind(Table::class, function ($app, $params) {
             return new class($params['livewire']) extends Table
             {
-                public function getModelLabel(): string
-                {
-                    $default = parent::getModelLabel();
-
-                    $translation = FilamentMultilanguagePlugin::getTranslation(
-                        $this->getLivewire()::class . '_table',
-                        'model_label',
-                        $default
-                    );
-
-                    return $translation ?? $default;
-                }
-
-                public function getPluralModelLabel(): string
-                {
-                    $default = parent::getPluralModelLabel();
-
-                    $translation = FilamentMultilanguagePlugin::getTranslation(
-                        $this->getLivewire()::class . '_table',
-                        'model_label_plural',
-                        $default
-                    );
-
-                    return $translation ?? $default;
-                }
-
-                public function getRecordTitle(Model $record): string
-                {
-                    $default = parent::getRecordTitle($record);
-
-                    $translation = FilamentMultilanguagePlugin::getTranslation(
-                        $this->getLivewire()::class . '_table',
-                        'record_title',
-                        $default
-                    );
-
-                    return $translation ?? $default;
-                }
-
                 public function getHeading(): string | Htmlable | null
                 {
                     $default = parent::getHeading();

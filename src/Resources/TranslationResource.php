@@ -4,7 +4,6 @@ namespace DTW\FilamentMultilanguage\Resources;
 
 use DTW\FilamentMultilanguage\Models\Translation;
 use DTW\FilamentMultilanguage\Pages\ListTranslations;
-use DTW\FilamentMultilanguage\Traits\TranslatableFilamentResource;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
@@ -16,8 +15,6 @@ use Filament\Tables\Filters\TernaryFilter;
 
 class TranslationResource extends Resource
 {
-    use TranslatableFilamentResource;
-
     protected static ?string $model = Translation::class;
     protected static ?string $navigationIcon = 'heroicon-o-globe-asia-australia';
 
@@ -91,5 +88,28 @@ class TranslationResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->where('translate_panel_id', filament()->getCurrentPanel()->getId());
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::query()
+            ->where('translate_panel_id', filament()->getCurrentPanel()->getId())
+            ->whereNotNull('translate_default')
+            ->whereNull('translate_value')
+            ->count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return static::getModel()::query()
+            ->where('translate_panel_id', filament()->getCurrentPanel()->getId())
+            ->whereNotNull('translate_default')
+            ->whereNull('translate_value')
+            ->count() > 0 ? 'danger' : 'primary';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return __('filament-multilanguage::translations.navigation_missing_translations_badge');
     }
 }
